@@ -78,25 +78,31 @@ def webhook():
             return "Error de verificación", 403
 
     if request.method == 'POST':
-        # Esta parte procesa los mensajes entrantes
         data = request.get_json()
-        print(f"Data recibida de Meta: {data}") # Muy útil para depurar
+        print(f"Data recibida de Meta: {data}")
 
         try:
-            # Extraemos la información relevante del complejo JSON de Meta
             if 'entry' in data and data['entry']:
                 changes = data['entry'][0]['changes']
                 if changes and 'value' in changes[0] and 'messages' in changes[0]['value']:
                     message_info = changes[0]['value']['messages'][0]
-                    from_number = message_info['from']
+                    
+                    from_number = message_info['from'] # ej: "5493471560219"
+                    
+                    # --- ¡AQUÍ ESTÁ LA MAGIA! ---
+                    # Normalizamos el número de teléfono para Argentina si es necesario
+                    if from_number.startswith("549") and len(from_number) == 13:
+                        print(f"Número original de Argentina detectado: {from_number}")
+                        from_number = "54" + from_number[3:] # Quitamos el '9'
+                        print(f"Número normalizado para el envío: {from_number}")
+                    # --- FIN DE LA MAGIA ---
+
                     msg_body = message_info['text']['body']
                     
-                    print(f"Mensaje de {from_number}: {msg_body}")
+                    print(f"Mensaje de {from_number} (ya normalizado): {msg_body}")
                     
-                    # Obtenemos la respuesta de la IA
                     bot_reply = get_response(msg_body)
                     
-                    # Enviamos la respuesta usando la nueva función
                     send_whatsapp_message(from_number, bot_reply)
 
         except KeyError as e:
@@ -104,7 +110,6 @@ def webhook():
         except Exception as e:
             print(f"Error inesperado: {e}")
 
-        # Le respondemos a Meta inmediatamente que recibimos el evento
         return "EVENT_RECEIVED", 200
 
 # La página web ya no es necesaria para este flujo, pero la dejamos
