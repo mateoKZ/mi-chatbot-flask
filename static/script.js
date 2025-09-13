@@ -20,7 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
             // 2. Envía el mensaje a la API de Flask
-            const response = await fetch('http://127.0.0.1:5001/webhook', {
+            const response = await fetch('https://mi-chatbot-mateo.onrender.com/webhook', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
