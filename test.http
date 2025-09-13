@@ -1,0 +1,6 @@
+POST http://127.0.0.1:5001/webhook
+Content-Type: application/json
+
+{
+    "message": "cuál es su horario?"
+}

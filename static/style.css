@@ -1,0 +1,100 @@
+/* Estilo general del cuerpo de la página */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f2f5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+/* Contenedor principal del chat */
+.chat-container {
+    width: 400px;
+    height: 600px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    background-color: #fff;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Encabezado del chat */
+.chat-header {
+    background-color: #007bff;
+    color: white;
+    padding: 15px;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    text-align: center;
+}
+
+.chat-header h2 {
+    margin: 0;
+    font-size: 1.2em;
+}
+
+/* Área donde se muestran los mensajes */
+.chat-messages {
+    flex-grow: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Estilo de cada burbuja de mensaje */
+.message {
+    padding: 10px 15px;
+    border-radius: 18px;
+    max-width: 75%;
+    line-height: 1.4;
+}
+
+/* Mensajes del usuario (a la derecha) */
+.message.user {
+    background-color: #007bff;
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+}
+
+/* Mensajes del bot (a la izquierda) */
+.message.bot {
+    background-color: #e9e9eb;
+    color: #333;
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+}
+
+/* Área de entrada de texto */
+.chat-input-area {
+    display: flex;
+    padding: 15px;
+    border-top: 1px solid #ddd;
+}
+
+#message-input {
+    flex-grow: 1;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    padding: 10px 15px;
+    font-size: 1em;
+}
+
+#send-button {
+    border: none;
+    background-color: #007bff;
+    color: white;
+    border-radius: 20px;
+    padding: 10px 20px;
+    margin-left: 10px;
+    cursor: pointer;
+    font-size: 1em;
+}
+
+#send-button:hover {
+    background-color: #0056b3;
+}
