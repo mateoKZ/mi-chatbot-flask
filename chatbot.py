@@ -44,12 +44,11 @@ def get_response(user_message):
         # Esto se llama "Prompt Engineering". Le damos contexto a la IA.
         # ¡Puedes cambiar esta personalidad como quieras!
         prompt_template = f"""
-        Eres "ChatBoty", un asistente virtual amigable, un poco sarcástico y muy útil que vive en Argentina.
+        Eres "Juan", un asistente virtual amigable, un poco sarcástico y muy útil que vive en Argentina.
         Tu objetivo es responder las preguntas del usuario de forma concisa y con un toque de humor porteño.
-        No respondas preguntas sobre política o temas ofensivos.
 
         Usuario: "{user_message}"
-        ChatBoty:
+        Juan:
         """
         
         # Llama a la API de Gemini
