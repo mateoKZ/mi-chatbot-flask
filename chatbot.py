@@ -36,7 +36,7 @@ def get_response(user_message):
         print(f"Error al llamar a la API de Gemini: {e}")
         return "Upa, parece que se me quemaron los cables. Intenta de nuevo en un ratito."
 
-# --- ¡NUEVA FUNCIÓN PARA ENVIAR MENSAJES! ---
+# --- ¡NUEVA FUNCIÓN PARA ENVIAR MENSAJES CON MÁS LOGS! ---
 def send_whatsapp_message(to_number, message):
     url = f"https://graph.facebook.com/v19.0/{PHONE_NUMBER_ID}/messages"
     headers = {
@@ -49,12 +49,23 @@ def send_whatsapp_message(to_number, message):
         "type": "text",
         "text": { "body": message }
     }
+
+    # --- LOGS DE DEPURACIÓN (ESTO ES LO IMPORTANTE) ---
+    print("--- Intentando enviar mensaje a WhatsApp ---")
+    print(f"URL: {url}")
+    # Ocultamos la mayor parte del token en el log por seguridad
+    print(f"Headers: {{'Authorization': 'Bearer EAA...{META_ACCESS_TOKEN[-5:]}', 'Content-Type': 'application/json'}}")
+    print(f"Data (payload): {data}")
+    print("-----------------------------------------")
+
     try:
         response = requests.post(url, headers=headers, json=data)
-        response.raise_for_status() # Lanza un error si la petición falla
+        response.raise_for_status()
         print(f"Mensaje enviado a {to_number}: {response.json()}")
     except requests.exceptions.RequestException as e:
-        print(f"Error al enviar mensaje a WhatsApp: {e}")
+        # Imprimimos el contenido del error si está disponible
+        error_details = e.response.json() if e.response else str(e)
+        print(f"Error al enviar mensaje a WhatsApp: {e} - Detalles: {error_details}")
 
 # --- WEBHOOK ADAPTADO PARA META ---
 @app.route('/webhook', methods=['GET', 'POST'])
