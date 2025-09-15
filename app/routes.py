@@ -19,7 +19,7 @@ PHONE_NUMBER_ID = os.environ.get("PHONE_NUMBER_ID")
 
 # Configuración del modelo Gemini
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel(model_name="gemini-1.5-flash-latest")
+model = genai.GenerativeModel(model_name="gemini-2.5-flash")
 
 # (Aquí van las funciones get_response y send_whatsapp_message, no cambian)
 def get_response(user_message):
