@@ -1,8 +1,7 @@
 # app/__init__.py
 from flask import Flask
 import os
-# ¡YA NO NECESITAMOS NullPool!
-# from sqlalchemy.pool import NullPool
+from sqlalchemy.pool import NullPool # Asegúrate de que esta importación esté
 
 # Importamos nuestras extensiones
 from .extensions import db
@@ -15,18 +14,19 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    # --- ELIMINAMOS ESTE BLOQUE ---
-    # app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    #     "pool_pre_ping": True,
-    #     "pool_recycle": 300,
-    #     "poolclass": NullPool
-    # }
+    # --- ¡VOLVEMOS A PONER ESTE BLOQUE! ---
+    # Es la configuración correcta para el Transaction Pooler
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+        "poolclass": NullPool
+    }
     # ------------------------------------
 
     # Inicializamos las extensiones con nuestra app
     db.init_app(app)
 
-    # (El resto del archivo sigue igual...)
+    # (El resto del archivo sigue igual)
     from .routes import main as main_blueprint
     app.register_blueprint(main_blueprint)
     
