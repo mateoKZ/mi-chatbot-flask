@@ -9,13 +9,17 @@ class Conversation(db.Model):
     start_time = db.Column(db.DateTime, default=datetime.utcnow)
     messages = db.relationship('Message', backref='conversation', lazy=True)
 
-# Tabla para guardar cada mensaje
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     conversation_id = db.Column(db.Integer, db.ForeignKey('conversation.id'), nullable=False)
     sender = db.Column(db.String(10), nullable=False) # 'user' o 'bot'
     content = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    # --- ¡NUEVAS COLUMNAS! ---
+    # Guardará el 'wamid' que nos da Meta para identificar el mensaje
+    meta_message_id = db.Column(db.String(255), unique=True, nullable=True)
+    # Guardará el estado: 'sent', 'delivered', 'read'
+    status = db.Column(db.String(20), nullable=True, default='pending')
 
 # Tabla para guardar los turnos
 class Appointment(db.Model):

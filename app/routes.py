@@ -63,16 +63,24 @@ def get_response(user_phone, user_message):
         return "Uff, tuve un problema intentando recordar nuestra charla. ¿Podés repetirme?"
 
 
+# --- FUNCIÓN PARA ENVIAR MENSAJES (Ahora devuelve el ID del mensaje) ---
 def send_whatsapp_message(to_number, message):
-    # ... (código igual que antes)
     url = f"https://graph.facebook.com/v19.0/{PHONE_NUMBER_ID}/messages"
     headers = {"Authorization": f"Bearer {META_ACCESS_TOKEN}", "Content-Type": "application/json"}
     data = {"messaging_product": "whatsapp", "to": to_number, "type": "text", "text": {"body": message}}
+    
+    meta_msg_id = None # Variable para guardar el ID
     try:
         response = requests.post(url, headers=headers, json=data)
         response.raise_for_status()
+        # ¡NUEVO! Extraemos el ID del mensaje de la respuesta de Meta
+        response_data = response.json()
+        meta_msg_id = response_data['messages'][0]['id']
+        print(f"Mensaje enviado con ID: {meta_msg_id}")
     except requests.exceptions.RequestException as e:
         print(f"Error al enviar mensaje a WhatsApp: {e}")
+    
+    return meta_msg_id # Devolvemos el ID
 
 # --- WEBHOOK MODIFICADO PARA PASAR EL NÚMERO DE TELÉFONO ---
 @main.route('/webhook', methods=['GET', 'POST'])
@@ -86,32 +94,62 @@ def webhook():
     if request.method == 'POST':
         data = request.get_json()
         try:
-            if 'entry' in data and data['entry'][0]['changes'][0]['value']['messages']:
-                message_info = data['entry'][0]['changes'][0]['value']['messages'][0]
-                from_number = message_info['from']
-                msg_body = message_info['text']['body']
-                
-                # Normalizamos el número
-                if from_number.startswith("549"):
-                    from_number = "54" + from_number[3:]
+            value = data['entry'][0]['changes'][0]['value']
+            
+            # 1. Si es una notificación de MENSAJE NUEVO
+            if 'messages' in value:
+                message_info = value['messages'][0]
+                if 'text' in message_info:
+                    from_number = message_info['from']
+                    msg_body = message_info['text']['body']
+                    
+                    if from_number.startswith("549"):
+                        from_number = "54" + from_number[3:]
 
-                # ¡Llamamos a la nueva función de IA pasándole el número del usuario!
-                bot_reply = get_response(from_number, msg_body)
-                
-                # Guardamos en la base de datos (esta lógica es la misma que antes)
-                conversation = Conversation.query.filter_by(user_phone=from_number).first()
-                if not conversation:
-                    conversation = Conversation(user_phone=from_number)
-                    db.session.add(conversation)
+                    bot_reply = get_response(from_number, msg_body)
+                    
+                    # Guardamos el mensaje del usuario (sin cambios)
+                    conversation = Conversation.query.filter_by(user_phone=from_number).first()
+                    if not conversation:
+                        conversation = Conversation(user_phone=from_number)
+                        db.session.add(conversation)
+                        db.session.commit()
+                    db.session.add(Message(conversation_id=conversation.id, sender='user', content=msg_body, status='received'))
+
+                    # Enviamos la respuesta
+                    meta_id_of_bot_message = send_whatsapp_message(from_number, bot_reply)
+                    
+                    # ¡NUEVO! Guardamos el mensaje del bot con su ID y estado inicial
+                    if meta_id_of_bot_message:
+                        bot_msg_db = Message(
+                            conversation_id=conversation.id,
+                            sender='bot',
+                            content=bot_reply,
+                            meta_message_id=meta_id_of_bot_message,
+                            status='sent' # Estado inicial es 'sent'
+                        )
+                        db.session.add(bot_msg_db)
+                    
                     db.session.commit()
+
+            # 2. ¡NUEVO! Si es una notificación de ESTADO
+            elif 'statuses' in value:
+                status_info = value['statuses'][0]
+                message_id = status_info['id']
+                new_status = status_info['status'] # 'delivered' o 'read'
                 
-                db.session.add(Message(conversation_id=conversation.id, sender='user', content=msg_body))
-                db.session.add(Message(conversation_id=conversation.id, sender='bot', content=bot_reply))
-                db.session.commit()
+                # Buscamos el mensaje en nuestra DB por su ID de Meta
+                message_to_update = Message.query.filter_by(meta_message_id=message_id).first()
                 
-                send_whatsapp_message(from_number, bot_reply)
-        except Exception as e:
-            print(f"Error procesando el webhook: {e}")
+                if message_to_update:
+                    print(f"Actualizando estado del mensaje {message_id} a '{new_status}'")
+                    message_to_update.status = new_status
+                    db.session.commit()
+                else:
+                    print(f"Recibida actualización de estado para un mensaje no encontrado en la DB: {message_id}")
+
+        except (KeyError, IndexError) as e:
+            print(f"Error procesando un payload de webhook inesperado: {e}")
         
         return "EVENT_RECEIVED", 200
 
