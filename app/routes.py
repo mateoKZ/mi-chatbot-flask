@@ -2,7 +2,7 @@
 import os
 import requests
 import google.generativeai as genai
-from flask import Blueprint, request, render_template
+from flask import Blueprint, request, render_template, jsonify
 from .models import db, Conversation, Message
 from datetime import datetime
 import socket # Importamos la librería de sockets para la prueba de red
