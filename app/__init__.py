@@ -8,7 +8,9 @@ from .extensions import db
 
 def create_app():
     # Creamos la instancia de la aplicación
-    app = Flask(__name__)
+    app = Flask(__name__,
+                template_folder='../templates',
+                static_folder='../static')
 
     # Cargamos la configuración desde variables de entorno
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
@@ -19,7 +21,7 @@ def create_app():
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         "pool_pre_ping": True,
         "pool_recycle": 300,
-        "poolclass": NullPool
+        "poolclass": NullPool if os.environ.get('DATABASE_URL') else None # Pequeña mejora para que no falle localmente si no hay DB
     }
     # ------------------------------------
 

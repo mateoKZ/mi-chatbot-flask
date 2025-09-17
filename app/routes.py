@@ -176,5 +176,5 @@ def test_connection():
         return f"¡FALLO! No se pudo conectar al host y puerto. Error: {e}", 500
 
 @main.route('/home')
-def index():
+def home(): 
     return render_template('index.html')
