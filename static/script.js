@@ -13,13 +13,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let currentUserPhone = null; // Variable para guardar el teléfono del usuario en sesión
 
-    // Lógica del botón "Iniciar Chat"
     startChatButton.addEventListener("click", () => {
         const phoneNumber = phoneInput.value.trim();
-        if (phoneNumber === "") {
-            alert("Por favor, ingresa un número de teléfono.");
+        
+        // --- ¡NUEVA VALIDACIÓN CON REGEX! ---
+        // Este Regex busca una cadena que contenga solo dígitos y tenga entre 11 y 15 caracteres.
+        const phoneRegex = /^\d{11,15}$/;
+        
+        if (!phoneRegex.test(phoneNumber)) {
+            alert("Por favor, ingresa un número de teléfono válido.\nDebe contener solo números, incluyendo el código de país (ej: 5491122334455).");
             return;
         }
+        // --- FIN DE LA VALIDACIÓN ---
+    
         currentUserPhone = phoneNumber;
         preChatContainer.style.display = "none";
         chatContainer.style.display = "flex";
@@ -37,7 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
             // ¡MODIFICADO! Ahora enviamos el mensaje, el teléfono y el origen
-            const response = await fetch('http://127.0.0.1:5001/webhook', { // O tu URL de Render
+            const response = await fetch('https://mi-chatbot-mateo.onrender.com/webhook', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

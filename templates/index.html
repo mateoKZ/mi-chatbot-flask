@@ -10,7 +10,11 @@
     <div class="pre-chat-container" id="pre-chat-container">
         <h2>Bienvenido al Chat</h2>
         <p>Por favor, ingresa tu número de teléfono para comenzar.</p>
-        <input type="tel" id="phone-input" placeholder="Ej: 5491122334455">
+        <input type="tel" id="phone-input" placeholder="Ej: 5491122334455" 
+            required 
+            pattern="[0-9]+" 
+            minlength="11" 
+            title="Ingresa solo números, incluyendo el código de país. Mínimo 11 dígitos.">
         <button id="start-chat-button">Iniciar Chat</button>
     </div>
 
