@@ -1,41 +1,56 @@
-// Espera a que todo el contenido de la página se cargue antes de ejecutar el script
+// static/script.js
 document.addEventListener("DOMContentLoaded", () => {
-    // Obtenemos referencias a los elementos del HTML que vamos a usar
+    // Referencias a los elementos de Pre-Chat
+    const preChatContainer = document.getElementById("pre-chat-container");
+    const phoneInput = document.getElementById("phone-input");
+    const startChatButton = document.getElementById("start-chat-button");
+
+    // Referencias a los elementos del Chat
+    const chatContainer = document.getElementById("chat-container");
     const messageInput = document.getElementById("message-input");
     const sendButton = document.getElementById("send-button");
     const chatMessages = document.getElementById("chat-messages");
 
-    // Función para enviar el mensaje
+    let currentUserPhone = null; // Variable para guardar el teléfono del usuario en sesión
+
+    // Lógica del botón "Iniciar Chat"
+    startChatButton.addEventListener("click", () => {
+        const phoneNumber = phoneInput.value.trim();
+        if (phoneNumber === "") {
+            alert("Por favor, ingresa un número de teléfono.");
+            return;
+        }
+        currentUserPhone = phoneNumber;
+        preChatContainer.style.display = "none";
+        chatContainer.style.display = "flex";
+    });
+
+    // Lógica para enviar un mensaje
     const sendMessage = async () => {
         const messageText = messageInput.value.trim();
-
-        // Si el mensaje está vacío, no hacemos nada
-        if (messageText === "") {
+        if (messageText === "" || currentUserPhone === null) {
             return;
         }
 
-        // 1. Muestra el mensaje del usuario en la ventana de chat
         addMessage(messageText, "user");
-        messageInput.value = ""; // Limpia el campo de entrada
+        messageInput.value = "";
 
         try {
-            // 2. Envía el mensaje a la API de Flask
-            const response = await fetch('https://mi-chatbot-mateo.onrender.com/webhook', {
+            // ¡MODIFICADO! Ahora enviamos el mensaje, el teléfono y el origen
+            const response = await fetch('http://127.0.0.1:5001/webhook', { // O tu URL de Render
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ message: messageText }), // Envía el mensaje en formato JSON
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: messageText,
+                    user_phone: currentUserPhone,
+                    origin: 'web'
+                }),
             });
 
-            if (!response.ok) {
-                throw new Error('La respuesta de la red no fue correcta.');
-            }
+            if (!response.ok) throw new Error('La respuesta de la red no fue correcta.');
 
             const data = await response.json();
             const botReply = data.response;
-
-            // 3. Muestra la respuesta del bot en la ventana de chat
             addMessage(botReply, "bot");
 
         } catch (error) {
@@ -43,25 +58,18 @@ document.addEventListener("DOMContentLoaded", () => {
             addMessage("Lo siento, no puedo conectarme con mi cerebro en este momento.", "bot");
         }
     };
-
-    // Función auxiliar para agregar mensajes a la ventana del chat
+    
+    // (La función addMessage no cambia)
     const addMessage = (text, sender) => {
         const messageElement = document.createElement("div");
-        messageElement.classList.add("message", sender); // Añade las clases 'message' y 'user' o 'bot'
+        messageElement.classList.add("message", sender);
         messageElement.textContent = text;
         chatMessages.appendChild(messageElement);
-
-        // Hace scroll hacia abajo automáticamente para ver el último mensaje
         chatMessages.scrollTop = chatMessages.scrollHeight;
     };
 
-    // Asigna el evento 'click' al botón de enviar
     sendButton.addEventListener("click", sendMessage);
-
-    // Permite enviar el mensaje también presionando la tecla "Enter"
     messageInput.addEventListener("keypress", (event) => {
-        if (event.key === "Enter") {
-            sendMessage();
-        }
+        if (event.key === "Enter") sendMessage();
     });
 });

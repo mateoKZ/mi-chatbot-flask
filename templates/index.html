@@ -7,13 +7,18 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div class="chat-container">
+    <div class="pre-chat-container" id="pre-chat-container">
+        <h2>Bienvenido al Chat</h2>
+        <p>Por favor, ingresa tu número de teléfono para comenzar.</p>
+        <input type="tel" id="phone-input" placeholder="Ej: 5491122334455">
+        <button id="start-chat-button">Iniciar Chat</button>
+    </div>
+
+    <div class="chat-container" id="chat-container" style="display: none;">
         <div class="chat-header">
-            <h2>Asistente</h2>
+            <h2>Chatbot Asistente</h2>
         </div>
-        <div class="chat-messages" id="chat-messages">
-            <div class="message bot">Hola soy Juan, tu asistente virtual! Arranca con un tema y vamos viendo.</div>
-        </div>
+        <div class="chat-messages" id="chat-messages"></div>
         <div class="chat-input-area">
             <input type="text" id="message-input" placeholder="Escribe tu mensaje aquí..." autocomplete="off">
             <button id="send-button">Enviar</button>

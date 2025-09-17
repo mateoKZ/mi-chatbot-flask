@@ -5,8 +5,11 @@ from datetime import datetime
 # Tabla para guardar las conversaciones
 class Conversation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_phone = db.Column(db.String(30), nullable=False)
+    user_phone = db.Column(db.String(30), nullable=False, unique=True) # Hacemos que el teléfono sea único
     start_time = db.Column(db.DateTime, default=datetime.utcnow)
+    # --- ¡NUEVA COLUMNA! ---
+    origin = db.Column(db.String(10), nullable=False, default='whatsapp') # 'whatsapp' o 'web'
+    
     messages = db.relationship('Message', backref='conversation', lazy=True)
 
 class Message(db.Model):
