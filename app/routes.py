@@ -82,77 +82,89 @@ def send_whatsapp_message(to_number, message):
     
     return meta_msg_id # Devolvemos el ID
 
-# --- WEBHOOK UNIVERSAL ---
-@main.route('/webhook', methods=['POST'])
+# --- WEBHOOK UNIVERSAL Y COMPLETO ---
+@main.route('/webhook', methods=['GET', 'POST'])
 def webhook():
-    data = request.get_json()
-    
-    # Verificamos si es una petición de Meta (WhatsApp)
-    if 'entry' in data and data.get('object') == 'whatsapp_business_account':
-        try:
-            value = data['entry'][0]['changes'][0]['value']
-            
-            if 'messages' in value:
-                message_info = value['messages'][0]
-                if 'text' in message_info:
-                    from_number = message_info['from']
-                    msg_body = message_info['text']['body']
-                    
-                    if from_number.startswith("549"):
-                        from_number = "54" + from_number[3:]
+    # --- Parte 1: Manejo de la Verificación de Meta (Método GET) ---
+    if request.method == 'GET':
+        # Este bloque es SOLO para la verificación inicial de Meta.
+        if request.args.get("hub.verify_token") == META_VERIFY_TOKEN:
+            return request.args.get("hub.challenge"), 200
+        else:
+            return "Error de verificación", 403
 
-                    bot_reply = get_response(from_number, msg_body)
-                    
-                    # Lógica de DB para WhatsApp
-                    conversation = Conversation.query.filter_by(user_phone=from_number).first()
-                    if not conversation:
-                        conversation = Conversation(user_phone=from_number, origin='whatsapp') # Guardamos el origen
-                        db.session.add(conversation)
+    # --- Parte 2: Manejo de Notificaciones Entrantes (Método POST) ---
+    if request.method == 'POST':
+        data = request.get_json()
+        
+        # Diferenciamos si la petición viene de Meta (WhatsApp) o de nuestro frontend web
+        if 'entry' in data and data.get('object') == 'whatsapp_business_account':
+            # --- Lógica para WhatsApp ---
+            try:
+                value = data['entry'][0]['changes'][0]['value']
+                
+                if 'messages' in value:
+                    # (Toda tu lógica para procesar mensajes de WhatsApp va aquí)
+                    message_info = value['messages'][0]
+                    if 'text' in message_info:
+                        from_number = message_info['from']
+                        msg_body = message_info['text']['body']
+                        
+                        if from_number.startswith("549"): from_number = "54" + from_number[3:]
+
+                        bot_reply = get_response(from_number, msg_body)
+                        
+                        conversation = Conversation.query.filter_by(user_phone=from_number).first()
+                        if not conversation:
+                            conversation = Conversation(user_phone=from_number, origin='whatsapp')
+                            db.session.add(conversation)
+                            db.session.commit()
+                        
+                        db.session.add(Message(conversation_id=conversation.id, sender='user', content=msg_body, status='received'))
+                        meta_id = send_whatsapp_message(from_number, bot_reply)
+                        if meta_id:
+                            db.session.add(Message(conversation_id=conversation.id, sender='bot', content=bot_reply, meta_message_id=meta_id, status='sent'))
                         db.session.commit()
-                    
-                    db.session.add(Message(conversation_id=conversation.id, sender='user', content=msg_body, status='received'))
-                    meta_id = send_whatsapp_message(from_number, bot_reply)
-                    
-                    if meta_id:
-                        db.session.add(Message(conversation_id=conversation.id, sender='bot', content=bot_reply, meta_message_id=meta_id, status='sent'))
-                    
+
+                elif 'statuses' in value:
+                    # (Toda tu lógica para procesar estados de WhatsApp va aquí)
+                    status_info = value['statuses'][0]
+                    message_id = status_info['id']
+                    new_status = status_info['status']
+                    message_to_update = Message.query.filter_by(meta_message_id=message_id).first()
+                    if message_to_update:
+                        message_to_update.status = new_status
+                        db.session.commit()
+
+            except Exception as e:
+                print(f"Error procesando payload de Meta: {e}")
+            
+            return "EVENT_RECEIVED", 200
+
+        else:
+            # --- Lógica para el Frontend Web ---
+            try:
+                user_phone = data['user_phone']
+                user_message = data['message']
+                origin = data.get('origin', 'web') # Usamos .get para seguridad
+                
+                bot_reply = get_response(user_phone, user_message)
+                
+                conversation = Conversation.query.filter_by(user_phone=user_phone).first()
+                if not conversation:
+                    conversation = Conversation(user_phone=user_phone, origin=origin)
+                    db.session.add(conversation)
                     db.session.commit()
 
-            elif 'statuses' in value:
-                # (Lógica para manejar estados no cambia)
-                # ...
-        except Exception as e:
-            print(f"Error procesando payload de Meta: {e}")
-
-    # Si no es de Meta, asumimos que es una petición de nuestro frontend web
-    else:
-        try:
-            user_phone = data['user_phone']
-            user_message = data['message']
-            origin = data['origin'] # 'web'
-            
-            bot_reply = get_response(user_phone, user_message)
-            
-            # Lógica de DB para la Web
-            conversation = Conversation.query.filter_by(user_phone=user_phone).first()
-            if not conversation:
-                conversation = Conversation(user_phone=user_phone, origin=origin)
-                db.session.add(conversation)
+                db.session.add(Message(conversation_id=conversation.id, sender='user', content=user_message, status='received'))
+                db.session.add(Message(conversation_id=conversation.id, sender='bot', content=bot_reply, status='delivered'))
                 db.session.commit()
-
-            db.session.add(Message(conversation_id=conversation.id, sender='user', content=user_message, status='received'))
-            db.session.add(Message(conversation_id=conversation.id, sender='bot', content=bot_reply, status='delivered')) # En la web se entrega al instante
-            db.session.commit()
-            
-            # ¡IMPORTANTE! El frontend espera una respuesta JSON
-            return jsonify({'response': bot_reply})
-            
-        except Exception as e:
-            print(f"Error procesando payload de la web: {e}")
-            return jsonify({'error': 'Error interno del servidor'}), 500
-
-    # La respuesta por defecto para Meta
-    return "EVENT_RECEIVED", 200
+                
+                return jsonify({'response': bot_reply})
+                
+            except Exception as e:
+                print(f"Error procesando payload de la web: {e}")
+                return jsonify({'error': 'Error interno del servidor'}), 500
 
 # --- ¡NUEVO! PRUEBA 2: Ruta para probar la conectividad de red ---
 @main.route('/test-connection')
