@@ -2,7 +2,7 @@
 import os
 import requests
 import google.generativeai as genai
-from flask import Blueprint, request
+from flask import Blueprint, request, render_template
 from .models import db, Conversation, Message
 from datetime import datetime
 import socket # Importamos la librería de sockets para la prueba de red
@@ -175,6 +175,6 @@ def test_connection():
     except Exception as e:
         return f"¡FALLO! No se pudo conectar al host y puerto. Error: {e}", 500
 
-@main.route('/')
+@main.route('/home')
 def index():
-    return "El servidor del chatbot de WhatsApp está funcionando."
+    return render_template('index.html')
